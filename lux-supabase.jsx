@@ -153,13 +153,13 @@ const useAdminModeration = (user) => {
   useEffect(() => {
     if (!user || !sb) return;
     sb.from('annonces')
-      .select('*, profiles(agency_name, city)')
+      .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
-      .then(({ data }) => setQueue(data || []));
+      .then(({ data, error }) => setQueue(error ? [] : (data || [])));
 
     sb.from('annonces')
-      .select('id, brand, model, status, rejection_reason, updated_at, profiles(agency_name)')
+      .select('id, brand, model, status, rejection_reason, updated_at, agency_name')
       .in('status', ['published', 'rejected'])
       .order('updated_at', { ascending: false })
       .limit(20)
@@ -167,7 +167,7 @@ const useAdminModeration = (user) => {
         if (data) setAuditLog(data.map(a => ({
           id:      a.id,
           action:  a.status,
-          listing: `${a.brand} ${a.model} — ${a.profiles?.agency_name || ''}`,
+          listing: `${a.brand} ${a.model} — ${a.agency_name || ''}`,
           ts:      new Date(a.updated_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
           note:    a.rejection_reason || '',
           admin:   user.email,
