@@ -176,23 +176,23 @@ const useAdminModeration = (user) => {
   }, [user?.id]);
 
   const approve = async (item) => {
-    if (!sb) return false;
+    if (!sb) return { ok: false, error: 'Client Supabase non initialisé' };
     const { error } = await sb.from('annonces')
-      .update({ status: 'published', rejection_reason: null })
+      .update({ status: 'published' })
       .eq('id', item.id);
     if (!error) {
       setQueue(q => (q || []).filter(x => x.id !== item.id));
       setAuditLog(prev => [{
         id: item.id, action: 'published',
-        listing: `${item.brand} ${item.model} — ${item.profiles?.agency_name || item.agency || ''}`,
+        listing: `${item.brand} ${item.model} — ${item.agency_name || item.agency || ''}`,
         ts: 'À l\'instant', note: '', admin: user.email,
       }, ...prev]);
     }
-    return !error;
+    return { ok: !error, error: error?.message || null };
   };
 
   const reject = async (item, reason) => {
-    if (!sb) return false;
+    if (!sb) return { ok: false, error: 'Client Supabase non initialisé' };
     const { error } = await sb.from('annonces')
       .update({ status: 'rejected', rejection_reason: reason })
       .eq('id', item.id);
@@ -200,11 +200,11 @@ const useAdminModeration = (user) => {
       setQueue(q => (q || []).filter(x => x.id !== item.id));
       setAuditLog(prev => [{
         id: item.id, action: 'rejected',
-        listing: `${item.brand} ${item.model} — ${item.profiles?.agency_name || item.agency || ''}`,
+        listing: `${item.brand} ${item.model} — ${item.agency_name || item.agency || ''}`,
         ts: 'À l\'instant', note: reason, admin: user.email,
       }, ...prev]);
     }
-    return !error;
+    return { ok: !error, error: error?.message || null };
   };
 
   return { queue, auditLog, approve, reject, isLoading: queue === null && !!sb };

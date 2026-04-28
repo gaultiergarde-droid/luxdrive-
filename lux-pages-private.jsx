@@ -735,11 +735,9 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
   const handleApprove = async (item) => {
     setActionError('');
     if (mod.approve) {
-      const ok = await mod.approve(item);
-      if (ok === false) {
-        setActionError(`Impossible de publier "${item.brand} ${item.model}". Vérifiez vos droits admin dans Supabase.`);
-      } else {
-        setQueue(q => q.filter(x => x.id !== item.id));
+      const res = await mod.approve(item);
+      if (res.ok === false) {
+        setActionError(`Erreur Supabase : ${res.error || 'droits admin manquants'}`);
       }
     } else {
       setQueue(q => q.filter(x => x.id !== item.id));
@@ -757,13 +755,12 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
     if (!rejectReason.trim()) { setRejectError(true); return; }
     setActionError('');
     if (mod.reject) {
-      const ok = await mod.reject(rejectModal, rejectReason);
-      if (ok === false) {
-        setActionError(`Impossible de rejeter l'annonce. Vérifiez vos droits admin dans Supabase.`);
+      const res = await mod.reject(rejectModal, rejectReason);
+      if (res.ok === false) {
+        setActionError(`Erreur Supabase : ${res.error || 'droits admin manquants'}`);
         setRejectModal(null);
         return;
       }
-      setQueue(q => q.filter(x => x.id !== rejectModal.id));
     } else {
       setQueue(q => q.filter(x => x.id !== rejectModal.id));
       logAction('rejected', `${rejectModal.brand} ${rejectModal.model} — ${rejectModal.agency}`, rejectReason);
