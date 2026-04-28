@@ -430,12 +430,18 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                 </div>
               </div>
             )}
+            {formErrors.submit && (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '2px', padding: '10px 14px', marginBottom: '10px' }}>
+                <p style={{ color: '#EF4444', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>⚠ {formErrors.submit}</p>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               {step > 1 && <Btn variant="ghost" onClick={() => { setStep(s => s - 1); setFormErrors({}); }}>← Retour</Btn>}
               <Btn variant="gold" disabled={submitting || (step === 2 && uploadedPhotos.some(p => p.uploading))} onClick={async () => {
                 if (!validateStep()) return;
                 if (step < 3) { setStep(s => s + 1); setFormErrors({}); return; }
                 setSubmitting(true);
+                setFormErrors({});
                 const imageUrls = uploadedPhotos.filter(p => p.url && !p.uploading).map(p => p.url);
                 const result = db.createAnnonce ? await db.createAnnonce({ ...nf, imageUrls }, agencyCity) : { ok: true };
                 setSubmitting(false);
@@ -444,6 +450,9 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                   setNf({ brand: '', model: '', category: '', price: '', year: '', fuel: '', transmission: '', seats: '', power: '', description: '', caution: '', kmParJour: '', assuranceIncluse: false, permisRequis: 'B', carburantInclus: false });
                   setUploadedPhotos([]);
                   setFormErrors({});
+                } else {
+                  const msg = result.error?.message || result.error || 'Erreur lors de la soumission. Vérifiez votre connexion et réessayez.';
+                  setFormErrors({ submit: msg });
                 }
               }}>
                 {submitting ? 'Envoi...' : step === 2 && uploadedPhotos.some(p => p.uploading) ? 'Upload en cours...' : step < 3 ? 'Continuer →' : 'Soumettre pour modération →'}
