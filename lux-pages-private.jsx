@@ -51,6 +51,7 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
   const [profileSaved,  setProfileSaved]  = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [submitting,    setSubmitting]    = useState(false);
+  const [formErrors,    setFormErrors]    = useState({});
   const [leadFilter,    setLeadFilter]    = useState('all');
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const fileRef = useRef(null);
@@ -103,6 +104,30 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
   };
 
   const renderMain = () => {
+    const lbl = { color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '8px' };
+    const err = { color: '#EF4444', fontSize: '10px', fontFamily: 'var(--font-ui)', marginTop: '4px' };
+    const validateStep = () => {
+      const errors = {};
+      if (step === 1) {
+        if (!nf.brand.trim())                          errors.brand        = 'Requis';
+        if (!nf.model.trim())                          errors.model        = 'Requis';
+        if (!nf.category)                              errors.category     = 'Requis';
+        if (!nf.year || parseInt(nf.year) < 1990)      errors.year         = 'Année invalide (min. 1990)';
+        if (!nf.fuel)                                  errors.fuel         = 'Requis';
+        if (!nf.power || parseInt(nf.power) < 50)      errors.power        = 'Puissance invalide (min. 50 ch)';
+        if (!nf.transmission)                          errors.transmission = 'Requis';
+        if (nf.description.trim().length < 50)         errors.description  = `${nf.description.trim().length}/50 caractères minimum`;
+      }
+      if (step === 2) {
+        if (uploadedPhotos.filter(p => p.url && !p.uploading).length === 0)
+          errors.photos = 'Au moins 1 photo est requise';
+      }
+      if (step === 3) {
+        if (!nf.price || parseInt(nf.price) <= 0) errors.price = 'Le prix doit être supérieur à 0';
+      }
+      setFormErrors(errors);
+      return Object.keys(errors).length === 0;
+    };
     if (section === 'overview') return (
       <div>
         <h1 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '40px', marginBottom: '6px', color: '#F0EEE8' }}>Vue globale</h1>
@@ -203,27 +228,108 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '3px', padding: '32px' }}>
             {step === 1 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px', marginBottom: '24px' }}>
-                {[['brand','Marque'],['model','Modèle'],['year','Année'],['power','Puissance (ch)'],['seats','Places'],['transmission','Boîte de vitesses']].map(([k, l]) => (
-                  <div key={k}>
-                    <label style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '8px' }}>{l}</label>
-                    <input value={nf[k]} onChange={e => setNf(f => ({ ...f, [k]: e.target.value }))} className="lux-input" placeholder={l} />
-                  </div>
-                ))}
-                <div style={{ gridColumn: '1/-1' }}>
-                  <label style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '8px' }}>Description</label>
-                  <textarea value={nf.description} onChange={e => setNf(f => ({ ...f, description: e.target.value }))} rows={4} className="lux-input" placeholder="Décrivez le véhicule…" style={{ resize: 'vertical' }} />
+                {/* Marque */}
+                <div>
+                  <label style={lbl}>Marque *</label>
+                  <input list="brand-list" value={nf.brand}
+                    onChange={e => { setNf(f => ({ ...f, brand: e.target.value })); setFormErrors(fe => ({ ...fe, brand: '' })); }}
+                    className="lux-input" placeholder="Ferrari, Porsche…" />
+                  <datalist id="brand-list">
+                    {['Ferrari','Lamborghini','Porsche','Rolls-Royce','Bentley','McLaren','Aston Martin','Mercedes-AMG','BMW M','Audi','Maserati','Bugatti','Koenigsegg','Pagani'].map(b => <option key={b} value={b} />)}
+                  </datalist>
+                  {formErrors.brand && <p style={err}>{formErrors.brand}</p>}
                 </div>
+                {/* Modèle */}
+                <div>
+                  <label style={lbl}>Modèle *</label>
+                  <input value={nf.model}
+                    onChange={e => { setNf(f => ({ ...f, model: e.target.value })); setFormErrors(fe => ({ ...fe, model: '' })); }}
+                    className="lux-input" placeholder="SF90, 911 Turbo S, Huracán…" />
+                  {formErrors.model && <p style={err}>{formErrors.model}</p>}
+                </div>
+                {/* Catégorie */}
+                <div>
+                  <label style={lbl}>Catégorie *</label>
+                  <select value={nf.category}
+                    onChange={e => { setNf(f => ({ ...f, category: e.target.value })); setFormErrors(fe => ({ ...fe, category: '' })); }}
+                    className="lux-input" style={{ appearance: 'none' }}>
+                    <option value="">— Choisir —</option>
+                    {[['supercar','Supercar'],['sport','Sport'],['gt','GT'],['berline','Berline Luxe'],['suv','SUV Luxe'],['cabriolet','Cabriolet']].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                  {formErrors.category && <p style={err}>{formErrors.category}</p>}
+                </div>
+                {/* Année */}
+                <div>
+                  <label style={lbl}>Année *</label>
+                  <input type="number" min="1990" max="2026" value={nf.year}
+                    onChange={e => { setNf(f => ({ ...f, year: e.target.value })); setFormErrors(fe => ({ ...fe, year: '' })); }}
+                    className="lux-input" placeholder="2024" />
+                  {formErrors.year && <p style={err}>{formErrors.year}</p>}
+                </div>
+                {/* Carburant */}
+                <div>
+                  <label style={lbl}>Carburant *</label>
+                  <select value={nf.fuel}
+                    onChange={e => { setNf(f => ({ ...f, fuel: e.target.value })); setFormErrors(fe => ({ ...fe, fuel: '' })); }}
+                    className="lux-input" style={{ appearance: 'none' }}>
+                    <option value="">— Choisir —</option>
+                    {['Essence','Hybride','Hybride rechargeable','Électrique','Diesel'].map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                  {formErrors.fuel && <p style={err}>{formErrors.fuel}</p>}
+                </div>
+                {/* Puissance */}
+                <div>
+                  <label style={lbl}>Puissance (ch) *</label>
+                  <input type="number" min="50" max="2000" value={nf.power}
+                    onChange={e => { setNf(f => ({ ...f, power: e.target.value })); setFormErrors(fe => ({ ...fe, power: '' })); }}
+                    className="lux-input" placeholder="450" />
+                  {formErrors.power && <p style={err}>{formErrors.power}</p>}
+                </div>
+                {/* Boîte */}
+                <div>
+                  <label style={lbl}>Boîte de vitesses *</label>
+                  <select value={nf.transmission}
+                    onChange={e => { setNf(f => ({ ...f, transmission: e.target.value })); setFormErrors(fe => ({ ...fe, transmission: '' })); }}
+                    className="lux-input" style={{ appearance: 'none' }}>
+                    <option value="">— Choisir —</option>
+                    {['Automatique','Manuelle','Semi-automatique (PDK)','Semi-automatique (DCT)','Robotisée'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  {formErrors.transmission && <p style={err}>{formErrors.transmission}</p>}
+                </div>
+                {/* Places */}
+                <div>
+                  <label style={lbl}>Nombre de places</label>
+                  <select value={nf.seats} onChange={e => setNf(f => ({ ...f, seats: e.target.value }))} className="lux-input" style={{ appearance: 'none' }}>
+                    <option value="">— Choisir —</option>
+                    {['2','4','5','7'].map(s => <option key={s} value={s}>{s} places</option>)}
+                  </select>
+                </div>
+                {/* Description */}
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={lbl}>
+                    Description *
+                    <span style={{ color: 'var(--muted)', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: '6px' }}>(min. 50 caractères)</span>
+                  </label>
+                  <textarea value={nf.description}
+                    onChange={e => { setNf(f => ({ ...f, description: e.target.value })); setFormErrors(fe => ({ ...fe, description: '' })); }}
+                    rows={4} className="lux-input" placeholder="Décrivez le véhicule, son histoire, ses équipements…" style={{ resize: 'vertical' }} />
+                  <p style={{ color: nf.description.length >= 50 ? '#22C55E' : 'var(--muted)', fontSize: '10px', fontFamily: 'var(--font-ui)', marginTop: '5px' }}>
+                    {nf.description.length} / 50 caractères
+                  </p>
+                  {formErrors.description && <p style={err}>{formErrors.description}</p>}
+                </div>
+                {/* Conditions */}
                 <div style={{ gridColumn: '1/-1', marginTop: '8px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <p style={{ color: '#C9A84C', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', marginBottom: '20px' }}>Conditions de location</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
                     {[['caution','Caution (€)'],['kmParJour','Km inclus / jour']].map(([k, l]) => (
                       <div key={k}>
-                        <label style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '8px' }}>{l}</label>
+                        <label style={lbl}>{l}</label>
                         <input type="number" value={nf[k]} onChange={e => setNf(f => ({ ...f, [k]: e.target.value }))} className="lux-input" placeholder="0" />
                       </div>
                     ))}
                     <div>
-                      <label style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '8px' }}>Permis requis</label>
+                      <label style={lbl}>Permis requis</label>
                       <select value={nf.permisRequis} onChange={e => setNf(f => ({ ...f, permisRequis: e.target.value }))} className="lux-input" style={{ appearance: 'none' }}>
                         {['B','A','A2','BE','C','D'].map(p => <option key={p} value={p}>Permis {p}</option>)}
                       </select>
@@ -231,7 +337,7 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       {[['assuranceIncluse','Assurance incluse'],['carburantInclus','Carburant inclus']].map(([k, l]) => (
                         <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <label style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)' }}>{l}</label>
+                          <label style={{ ...lbl, marginBottom: 0 }}>{l}</label>
                           <button type="button" onClick={() => setNf(f => ({ ...f, [k]: !f[k] }))}
                             style={{ width: '42px', height: '22px', borderRadius: '11px', background: nf[k] ? '#C9A84C' : 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
                             <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: nf[k] ? '23px' : '3px', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', transition: 'left 0.2s' }} />
@@ -296,6 +402,7 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                     <p style={{ color: 'var(--muted)', fontSize: '11px', fontFamily: 'var(--font-ui)' }}>{uploadedPhotos.length}/10 photos</p>
                   </div>
                 )}
+                {formErrors.photos && <p style={err}>{formErrors.photos}</p>}
               </div>
             )}
             {step === 3 && (
@@ -308,6 +415,7 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                     </div>
                   ))}
                 </div>
+                {formErrors.price && <p style={err}>{formErrors.price}</p>}
                 {/* Recap conditions */}
                 <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.12)', borderRadius: '2px', padding: '16px 20px' }}>
                   <p style={{ color: '#C9A84C', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', marginBottom: '12px' }}>Récapitulatif conditions</p>
@@ -322,10 +430,11 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {step > 1 && <Btn variant="ghost" onClick={() => setStep(s => s - 1)}>← Retour</Btn>}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {step > 1 && <Btn variant="ghost" onClick={() => { setStep(s => s - 1); setFormErrors({}); }}>← Retour</Btn>}
               <Btn variant="gold" disabled={submitting || (step === 2 && uploadedPhotos.some(p => p.uploading))} onClick={async () => {
-                if (step < 3) { setStep(s => s + 1); return; }
+                if (!validateStep()) return;
+                if (step < 3) { setStep(s => s + 1); setFormErrors({}); return; }
                 setSubmitting(true);
                 const imageUrls = uploadedPhotos.filter(p => p.url && !p.uploading).map(p => p.url);
                 const result = db.createAnnonce ? await db.createAnnonce({ ...nf, imageUrls }, agencyCity) : { ok: true };
@@ -334,6 +443,7 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                   setStep(s => s + 1);
                   setNf({ brand: '', model: '', category: '', price: '', year: '', fuel: '', transmission: '', seats: '', power: '', description: '', caution: '', kmParJour: '', assuranceIncluse: false, permisRequis: 'B', carburantInclus: false });
                   setUploadedPhotos([]);
+                  setFormErrors({});
                 }
               }}>
                 {submitting ? 'Envoi...' : step === 2 && uploadedPhotos.some(p => p.uploading) ? 'Upload en cours...' : step < 3 ? 'Continuer →' : 'Soumettre pour modération →'}
