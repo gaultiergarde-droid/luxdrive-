@@ -46,7 +46,7 @@ const DashStat = ({ label, value, trend, accent, mono }) => (
 const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }) => {
   const [section,       setSection]       = useState('overview');
   const [step,          setStep]          = useState(1);
-  const [nf,            setNf]            = useState({ brand: '', model: '', category: '', price: '', year: '', fuel: '', transmission: '', seats: '', power: '', description: '', caution: '', kmParJour: '', assuranceIncluse: false, permisRequis: 'B', carburantInclus: false });
+  const [nf,            setNf]            = useState({ brand: '', model: '', category: '', city: '', price: '', year: '', fuel: '', transmission: '', seats: '', power: '', description: '', caution: '', kmParJour: '', assuranceIncluse: false, permisRequis: 'B', carburantInclus: false });
   const [profileForm,   setProfileForm]   = useState({ name: '', city: '', address: '', phone: '', email: '', siret: '', description: '', website: '' });
   const [profileSaved,  setProfileSaved]  = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -321,6 +321,15 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                   </p>
                   {formErrors.description && <p style={err}>{formErrors.description}</p>}
                 </div>
+                {/* Ville */}
+                <div>
+                  <label style={lbl}>Ville de l'annonce</label>
+                  <select value={nf.city || agencyCity} onChange={e => setNf(f => ({ ...f, city: e.target.value }))} className="lux-input" style={{ appearance: 'none' }}>
+                    {['lyon','paris','marseille','nice','bordeaux','toulouse','nantes','strasbourg','lille','montpellier'].map(c => (
+                      <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
                 {/* Conditions */}
                 <div style={{ gridColumn: '1/-1', marginTop: '8px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <p style={{ color: '#C9A84C', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', marginBottom: '20px' }}>Conditions de location</p>
@@ -446,11 +455,11 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
                 setSubmitting(true);
                 setFormErrors({});
                 const imageUrls = uploadedPhotos.filter(p => p.url && !p.uploading).map(p => p.url);
-                const result = db.createAnnonce ? await db.createAnnonce({ ...nf, imageUrls }, agencyCity) : { ok: true };
+                const result = db.createAnnonce ? await db.createAnnonce({ ...nf, imageUrls }, nf.city || agencyCity) : { ok: true };
                 setSubmitting(false);
                 if (result.ok !== false) {
                   setStep(s => s + 1);
-                  setNf({ brand: '', model: '', category: '', price: '', year: '', fuel: '', transmission: '', seats: '', power: '', description: '', caution: '', kmParJour: '', assuranceIncluse: false, permisRequis: 'B', carburantInclus: false });
+                  setNf({ brand: '', model: '', category: '', city: '', price: '', year: '', fuel: '', transmission: '', seats: '', power: '', description: '', caution: '', kmParJour: '', assuranceIncluse: false, permisRequis: 'B', carburantInclus: false });
                   setUploadedPhotos([]);
                   setFormErrors({});
                 } else {
@@ -791,12 +800,12 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
 
                 {/* LEFT — Photo gallery */}
                 <div style={{ width: '280px', flexShrink: 0, position: 'relative', background: '#060610' }}>
-                  <img src={item.image} alt={`${item.brand} ${item.model}`}
+                  <img src={(item.image_urls && item.image_urls.length > 0) ? item.image_urls[0] : (item.image_url || '')} alt={`${item.brand} ${item.model}`}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: '180px' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,15,0.7) 0%, transparent 50%)' }} />
                   {/* Photo count badge */}
                   <div style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(10,10,15,0.8)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(240,238,232,0.7)', padding: '3px 9px', fontSize: '10px', fontFamily: 'var(--font-mono)', borderRadius: '2px' }}>
-                    {3 + idx} photos
+                    {(item.image_urls?.length || (item.image_url ? 1 : 0))} photos
                   </div>
                   {/* Submission time */}
                   <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(10,10,15,0.85)', color: 'var(--muted)', padding: '3px 9px', fontSize: '9px', fontFamily: 'var(--font-mono)', borderRadius: '2px', border: '1px solid rgba(255,255,255,0.08)' }}>
