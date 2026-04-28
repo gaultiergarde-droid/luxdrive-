@@ -37,6 +37,10 @@ create table if not exists profiles (
 
 alter table profiles enable row level security;
 
+drop policy if exists "Users read own profile"       on profiles;
+drop policy if exists "Users update own profile"     on profiles;
+drop policy if exists "Service role insert profile"  on profiles;
+
 create policy "Users read own profile"
   on profiles for select
   using (auth.uid() = id);
@@ -45,7 +49,6 @@ create policy "Users update own profile"
   on profiles for update
   using (auth.uid() = id);
 
--- Permet le trigger d'insérer le profil à l'inscription
 create policy "Service role insert profile"
   on profiles for insert
   with check (true);
@@ -114,42 +117,42 @@ create table if not exists annonces (
 
 alter table annonces enable row level security;
 
--- Public : lecture des annonces publiées uniquement
+drop policy if exists "Public read published annonces" on annonces;
+drop policy if exists "Agency read own annonces"       on annonces;
+drop policy if exists "Agency insert annonces"         on annonces;
+drop policy if exists "Agency update own annonces"     on annonces;
+drop policy if exists "Agency delete own annonces"     on annonces;
+drop policy if exists "Admin read all annonces"        on annonces;
+drop policy if exists "Admin update all annonces"      on annonces;
+
 create policy "Public read published annonces"
   on annonces for select
   using (status = 'published');
 
--- Agence : lit toutes ses annonces (tous statuts)
 create policy "Agency read own annonces"
   on annonces for select
   using (auth.uid() = user_id);
 
--- Agence : insère ses annonces
 create policy "Agency insert annonces"
   on annonces for insert
   with check (auth.uid() = user_id);
 
--- Agence : modifie ses propres annonces
 create policy "Agency update own annonces"
   on annonces for update
   using (auth.uid() = user_id);
 
--- Agence : supprime ses propres annonces
 create policy "Agency delete own annonces"
   on annonces for delete
   using (auth.uid() = user_id);
 
--- Admin : lit toutes les annonces (modération)
 create policy "Admin read all annonces"
   on annonces for select
   using (is_admin());
 
--- Admin : modifie toutes les annonces (approbation / rejet)
 create policy "Admin update all annonces"
   on annonces for update
   using (is_admin());
 
--- Auto-update du champ updated_at à chaque modification
 create or replace function update_updated_at()
 returns trigger
 language plpgsql
@@ -171,7 +174,7 @@ create trigger annonces_updated_at
 -- ───────────────────────────────────────────────────────────────
 create table if not exists leads (
   id           uuid        default gen_random_uuid() primary key,
-  user_id      uuid        references auth.users,             -- propriétaire de l'annonce
+  user_id      uuid        references auth.users,
   annonce_id   uuid        references annonces on delete set null,
   name         text,
   phone        text,
@@ -180,24 +183,25 @@ create table if not exists leads (
   date_to      date,
   message      text,
   rental_type  text        default 'Demande devis',
-  status       text        not null default 'new',            -- new | pending | confirmed
+  status       text        not null default 'new',
   city         text,
   created_at   timestamptz not null default now()
 );
 
 alter table leads enable row level security;
 
--- N'importe qui (même non connecté) peut envoyer une demande
+drop policy if exists "Anyone can create a lead"  on leads;
+drop policy if exists "Agency read own leads"     on leads;
+drop policy if exists "Agency update own leads"   on leads;
+
 create policy "Anyone can create a lead"
   on leads for insert
   with check (true);
 
--- Agence : lit les leads reçus sur ses annonces
 create policy "Agency read own leads"
   on leads for select
   using (auth.uid() = user_id);
 
--- Agence : met à jour le statut de ses leads
 create policy "Agency update own leads"
   on leads for update
   using (auth.uid() = user_id);
@@ -209,6 +213,10 @@ create policy "Agency update own leads"
 insert into storage.buckets (id, name, public)
 values ('annonces-photos', 'annonces-photos', true)
 on conflict (id) do nothing;
+
+drop policy if exists "Annonceurs peuvent uploader des photos"   on storage.objects;
+drop policy if exists "Photos publiquement lisibles"             on storage.objects;
+drop policy if exists "Annonceurs peuvent supprimer leurs photos" on storage.objects;
 
 create policy "Annonceurs peuvent uploader des photos"
   on storage.objects for insert
