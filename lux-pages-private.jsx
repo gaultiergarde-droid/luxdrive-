@@ -701,6 +701,10 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
   useEffect(() => { if (mod.queue !== null) setQueue(mod.queue); }, [mod.queue]);
   const pendingCount = queue.length;
 
+  // Preview modal state
+  const [previewItem, setPreviewItem] = useState(null);
+  const [previewPhotoIdx, setPreviewPhotoIdx] = useState(0);
+
   // Reject modal state
   const [rejectModal, setRejectModal] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -839,7 +843,7 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <Btn variant="ghost" style={{ padding: '8px 16px' }} onClick={() => navigate({ page: 'detail', slug: item.slug })}>Voir l'annonce complète</Btn>
+                    <Btn variant="ghost" style={{ padding: '8px 16px' }} onClick={() => { setPreviewItem(item); setPreviewPhotoIdx(0); }}>Voir l'annonce complète</Btn>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
                       <button className="btn-danger" onClick={() => openRejectModal(item)}>
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -1020,6 +1024,99 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
         </div>
         {renderSection()}
       </main>
+
+      {/* ── PREVIEW MODAL ── */}
+      {previewItem && (() => {
+        const photos = (previewItem.image_urls && previewItem.image_urls.length > 0) ? previewItem.image_urls : (previewItem.image_url ? [previewItem.image_url] : []);
+        const photo = photos[previewPhotoIdx] || '';
+        const specs = [
+          previewItem.year        && ['Année',        previewItem.year],
+          previewItem.fuel        && ['Carburant',     previewItem.fuel],
+          previewItem.power       && ['Puissance',     `${previewItem.power} ch`],
+          previewItem.transmission && ['Boîte',        previewItem.transmission],
+          previewItem.seats       && ['Places',        previewItem.seats],
+          previewItem.category    && ['Catégorie',     previewItem.category],
+        ].filter(Boolean);
+        return (
+          <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setPreviewItem(null); }} style={{ zIndex: 200 }}>
+            <div className="modal-box" style={{ width: '780px', maxWidth: '96vw', padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+              {/* Photo gallery */}
+              <div style={{ position: 'relative', height: '340px', background: '#060610', flexShrink: 0 }}>
+                {photo ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(240,238,232,0.15)', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>Aucune photo</div>}
+                {photos.length > 1 && (<>
+                  <button onClick={() => setPreviewPhotoIdx(i => (i - 1 + photos.length) % photos.length)} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(10,10,15,0.7)', border: '1px solid rgba(255,255,255,0.15)', color: '#F0EEE8', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                  <button onClick={() => setPreviewPhotoIdx(i => (i + 1) % photos.length)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(10,10,15,0.7)', border: '1px solid rgba(255,255,255,0.15)', color: '#F0EEE8', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+                  <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '5px' }}>
+                    {photos.map((_, i) => <div key={i} onClick={() => setPreviewPhotoIdx(i)} style={{ width: i === previewPhotoIdx ? '18px' : '6px', height: '6px', borderRadius: '3px', background: i === previewPhotoIdx ? '#C9A84C' : 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.2s' }} />)}
+                  </div>
+                </>)}
+                <button onClick={() => setPreviewItem(null)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(10,10,15,0.8)', border: '1px solid rgba(255,255,255,0.15)', color: '#F0EEE8', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(10,10,15,0.8)', color: 'var(--muted)', padding: '3px 10px', fontSize: '10px', fontFamily: 'var(--font-mono)', borderRadius: '2px' }}>{previewPhotoIdx + 1} / {photos.length}</div>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '28px 32px', overflowY: 'auto', flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                  <div>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <Badge variant="orange">En attente</Badge>
+                      <Badge variant="default">{previewItem.city}</Badge>
+                    </div>
+                    <h2 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '32px', color: '#F0EEE8', marginBottom: '4px' }}>{previewItem.brand} {previewItem.model}</h2>
+                    <p style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>{previewItem.agency_name || previewItem.agency} · ID #{previewItem.id?.slice(0,8)}</p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="price-mono" style={{ color: '#C9A84C', fontSize: '28px', fontWeight: 500 }}>{(previewItem.price || 0).toLocaleString('fr-FR')} €<span style={{ fontSize: '14px', color: 'var(--muted)' }}>/j</span></div>
+                    {previewItem.price_week && <div style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)', marginTop: '2px' }}>{(previewItem.price_week).toLocaleString('fr-FR')} €/sem</div>}
+                  </div>
+                </div>
+
+                {/* Specs grid */}
+                {specs.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+                    {specs.map(([label, value]) => (
+                      <div key={label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '2px', padding: '10px 14px' }}>
+                        <p style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', marginBottom: '4px' }}>{label}</p>
+                        <p style={{ color: '#F0EEE8', fontSize: '13px', fontFamily: 'var(--font-ui)' }}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Description */}
+                {previewItem.description && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <p style={{ color: 'var(--muted)', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>Description</p>
+                    <p style={{ color: 'rgba(240,238,232,0.7)', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.7 }}>{previewItem.description}</p>
+                  </div>
+                )}
+
+                {/* Conditions */}
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', padding: '14px 18px', background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.12)', borderRadius: '2px', marginBottom: '24px' }}>
+                  {previewItem.caution      && <span style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Caution : <strong style={{ color: '#F0EEE8' }}>{Number(previewItem.caution).toLocaleString('fr-FR')} €</strong></span>}
+                  {previewItem.km_par_jour  && <span style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Km/j : <strong style={{ color: '#F0EEE8' }}>{previewItem.km_par_jour} km</strong></span>}
+                  <span style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Permis : <strong style={{ color: '#F0EEE8' }}>{previewItem.permis_requis || 'B'}</strong></span>
+                  <span style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Assurance : <strong style={{ color: previewItem.assurance_incluse ? '#22C55E' : '#F0EEE8' }}>{previewItem.assurance_incluse ? 'Incluse' : 'Non incluse'}</strong></span>
+                  <span style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Carburant : <strong style={{ color: previewItem.carburant_inclus ? '#22C55E' : '#F0EEE8' }}>{previewItem.carburant_inclus ? 'Inclus' : 'Non inclus'}</strong></span>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <Btn variant="ghost" onClick={() => setPreviewItem(null)}>Fermer</Btn>
+                  <button className="btn-danger" onClick={() => { setPreviewItem(null); openRejectModal(previewItem); }} style={{ padding: '10px 20px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    Rejeter
+                  </button>
+                  <button className="btn-success" onClick={() => { handleApprove(previewItem); setPreviewItem(null); }} style={{ padding: '10px 20px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Publier
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── REJECT MODAL ── */}
       {rejectModal && (
