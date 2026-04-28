@@ -13,7 +13,7 @@ const AdminSideNav = ({ active, setActive, items, onBack, title, subtitle }) => 
     </div>
     <nav style={{ padding: '16px 12px', flex: 1 }}>
       {items.map(item => (
-        <button key={item.id} className="side-item" onClick={() => setActive(item.id)}
+        <button key={item.id} className="side-item" onClick={() => item.onClick ? item.onClick() : setActive(item.id)}
           style={{ width: '100%', background: active === item.id ? 'rgba(201,168,76,0.08)' : 'transparent', border: `1px solid ${active === item.id ? 'rgba(201,168,76,0.22)' : 'transparent'}`, color: active === item.id ? '#C9A84C' : 'var(--muted)', padding: '10px 14px', borderRadius: '3px', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px', letterSpacing: '0.3px', transition: 'all 0.15s' }}>
           <span style={{ opacity: 0.6, fontSize: '13px' }}>{item.icon}</span>
           <span style={{ flex: 1 }}>{item.label}</span>
@@ -87,6 +87,8 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
   // Leads : données DB si disponibles, sinon mock
   const leads = db.dbLeads !== null && db.dbLeads !== undefined ? db.dbLeads : MOCK_LEADS;
 
+  const isUserAdmin = db.dbProfile?.role === 'admin' || authProfile?.role === 'admin';
+
   const navItems = [
     { id: 'overview', icon: '◈', label: 'Vue globale' },
     { id: 'annonces', icon: '◆', label: 'Mes annonces' },
@@ -95,6 +97,7 @@ const DashboardPage = ({ route, navigate, user, profile: authProfile, onLogout }
     { id: 'abonnement', icon: '◇', label: 'Abonnement' },
     { id: 'stats', icon: '▣', label: 'Statistiques' },
     { id: 'leads', icon: '◉', label: 'Leads reçus', badge: 2 },
+    ...(isUserAdmin ? [{ id: 'admin', icon: '⚙', label: 'Modération admin', onClick: () => navigate({ page: 'admin' }) }] : []),
   ];
 
   const statusMap = {
