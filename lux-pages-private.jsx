@@ -730,12 +730,20 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
   };
   const fullAuditLog = [...localAuditExtra, ...auditLog];
 
+  const [actionError, setActionError] = useState('');
+
   const handleApprove = async (item) => {
+    setActionError('');
     if (mod.approve) {
-      await mod.approve(item);
+      const ok = await mod.approve(item);
+      if (ok === false) {
+        setActionError(`Impossible de publier "${item.brand} ${item.model}". Vérifiez vos droits admin dans Supabase.`);
+      } else {
+        setQueue(q => q.filter(x => x.id !== item.id));
+      }
     } else {
       setQueue(q => q.filter(x => x.id !== item.id));
-      logAction('published', `${item.brand} ${item.model} — ${item.agency}`);
+      logAction('published', `${item.brand} ${item.model} — ${item.agency_name || item.agency}`);
     }
   };
 
@@ -747,8 +755,15 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
 
   const handleReject = async () => {
     if (!rejectReason.trim()) { setRejectError(true); return; }
+    setActionError('');
     if (mod.reject) {
-      await mod.reject(rejectModal, rejectReason);
+      const ok = await mod.reject(rejectModal, rejectReason);
+      if (ok === false) {
+        setActionError(`Impossible de rejeter l'annonce. Vérifiez vos droits admin dans Supabase.`);
+        setRejectModal(null);
+        return;
+      }
+      setQueue(q => q.filter(x => x.id !== rejectModal.id));
     } else {
       setQueue(q => q.filter(x => x.id !== rejectModal.id));
       logAction('rejected', `${rejectModal.brand} ${rejectModal.model} — ${rejectModal.agency}`, rejectReason);
@@ -768,6 +783,12 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
     // ── MODERATION ──────────────────────────────────────
     if (section === 'moderation') return (
       <div>
+        {actionError && (
+          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '2px', padding: '12px 16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ color: '#EF4444', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>⚠ {actionError}</p>
+            <button onClick={() => setActionError('')} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 0 0 12px' }}>✕</button>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '36px' }}>
           <div>
             <h1 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '40px', color: '#F0EEE8', marginBottom: '6px' }}>File de modération</h1>
