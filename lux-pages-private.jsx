@@ -839,7 +839,7 @@ const AdminPage = ({ route, navigate, user, onLogout }) => {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <Btn variant="ghost" style={{ padding: '8px 16px' }}>Voir l'annonce complète</Btn>
+                    <Btn variant="ghost" style={{ padding: '8px 16px' }} onClick={() => navigate({ page: 'detail', slug: item.slug })}>Voir l'annonce complète</Btn>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
                       <button className="btn-danger" onClick={() => openRejectModal(item)}>
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
