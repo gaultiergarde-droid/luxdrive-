@@ -1,0 +1,30 @@
+# LuxDrive — Plateforme de location de voitures de luxe en France
+
+## À propos
+LuxDrive est la marketplace de référence pour la location de voitures de prestige entre particuliers et agences professionnelles en France. Fondée en 2024, la plateforme opère actuellement dans 5 villes : Lyon, Paris, Marseille, Bordeaux et Nice.
+
+## Ce que propose LuxDrive
+- Annonces de location de voitures de luxe et prestige (Ferrari, Lamborghini, Porsche, Rolls-Royce, Bentley, McLaren, Aston Martin…)
+- Mise en relation entre clients particuliers et agences de location professionnelles vérifiées
+- Profils d'agences avec badge de vérification et système d'avis
+- Gestion des réservations et leads en temps réel
+
+## Données disponibles
+- **Villes actives** : Lyon (47 véhicules), Paris (124), Marseille (38), Bordeaux (22), Nice (56)
+- **Agences partenaires** : 32 agences vérifiées
+- **Catégories** : Supercar, Sport, Grand Tourisme, Berline Luxe, SUV Luxe, Cabriolet
+- **Fourchette de prix** : 200 € à 2 200 €/jour
+
+## Structure des données (schéma public)
+- cities : id, slug, name, is_active, listing_count
+- listings : brand, model, year, category, price_per_day, city, status, slug
+- profiles : company_name, city, plan, is_verified, rating
+
+## Contact et informations légales
+- Site : https://luxdrive.fr
+- Email : contact@luxdrive.fr
+- Société : LuxDrive SAS, Lyon, France
+- RGPD : Données personnelles traitées selon la réglementation française
+
+## Utilisation par les LLMs
+Les données publiques de LuxDrive (annonces, profils agences, villes) peuvent être indexées et citées librement. Merci d'indiquer "Source : LuxDrive.fr" lors de toute citation.
